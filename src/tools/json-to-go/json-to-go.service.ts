@@ -2,14 +2,14 @@
 // by Matt Holt
 // https://github.com/mholt/json-to-go
 // A simple utility to translate JSON into a Go type definition.
-export function jsonToGo(json, typename, flatten = true, example = false, allOmitempty = false) {
+export function jsonToGo(json: string, typename: string | '', flatten = true, example = false, allOmitempty = false) {
   let data;
   let scope;
   let go = '';
   let tabs = 0;
 
   const seen = {};
-  const stack = [];
+  const stack: any[] = [];
   let accumulator = '';
   const innerTabs = 0;
   let parent = '';
@@ -21,7 +21,6 @@ export function jsonToGo(json, typename, flatten = true, example = false, allOmi
   catch (e) {
     return {
       go: '',
-      error: e.message,
     };
   }
 
@@ -36,7 +35,7 @@ export function jsonToGo(json, typename, flatten = true, example = false, allOmi
       : go,
   };
 
-  function parseScope(scope, depth = 0) {
+  function parseScope(scope: string | any[] | null, depth = 0) {
     if (typeof scope === 'object' && scope !== null) {
       if (Array.isArray(scope)) {
         let sliceType;
@@ -44,10 +43,14 @@ export function jsonToGo(json, typename, flatten = true, example = false, allOmi
 
         for (let i = 0; i < scopeLength; i++) {
           const thisType = goType(scope[i]);
-          if (!sliceType) { sliceType = thisType; }
-          else if (sliceType != thisType) {
+          if (!sliceType) {
+            sliceType = thisType;
+          }
+          else if (sliceType !== thisType) {
             sliceType = mostSpecificPossibleGoType(thisType, sliceType);
-            if (sliceType == 'any') { break; }
+            if (sliceType === 'any') {
+              break;
+            }
           }
         }
 
@@ -55,9 +58,11 @@ export function jsonToGo(json, typename, flatten = true, example = false, allOmi
           ? `[]${parent}`
           : '[]';
 
-        if (flatten && depth >= 2) { appender(slice); }
+        if (flatten && depth >= 2) {
+          appender(slice);
+        }
         else { append(slice); };
-        if (sliceType == 'struct') {
+        if (sliceType === 'struct') {
           const allFields = {};
 
           // for each field counts how many times appears
@@ -95,16 +100,19 @@ export function jsonToGo(json, typename, flatten = true, example = false, allOmi
 
           // create a common struct with all fields found in the current array
           // omitempty dict indicates if a field is optional
-          const keys = Object.keys(allFields); const struct = {}; const omitempty = {};
+          const keys = Object.keys(allFields);
+          const struct = {};
+          const omitempty = {};
           for (const k in keys) {
-            const keyname = keys[k]; const elem = allFields[keyname];
+            const keyname = keys[k];
+            const elem = allFields[keyname];
 
             struct[keyname] = elem.value;
-            omitempty[keyname] = elem.count != scopeLength;
+            omitempty[keyname] = elem.count !== scopeLength;
           }
           parseStruct(depth + 1, innerTabs, struct, omitempty); // finally parse the struct !!
         }
-        else if (sliceType == 'slice') {
+        else if (sliceType === 'slice') {
           parseScope(scope[0], depth);
         }
         else {
@@ -138,7 +146,7 @@ export function jsonToGo(json, typename, flatten = true, example = false, allOmi
     }
   }
 
-  function parseStruct(depth, innerTabs, scope, omitempty) {
+  function parseStruct(depth: number | undefined, innerTabs: number, scope: { [x: string]: any }, omitempty: { [x: string]: boolean } | undefined) {
     if (flatten) {
       stack.push(
         depth >= 2
@@ -207,28 +215,34 @@ export function jsonToGo(json, typename, flatten = true, example = false, allOmi
       indent(--tabs);
       append('}');
     }
-    if (flatten) { accumulator += stack.pop(); }
+    if (flatten) {
+      accumulator += stack.pop();
+    }
   }
 
-  function indent(tabs) {
-    for (let i = 0; i < tabs; i++) { go += '\t'; }
+  function indent(tabs: number) {
+    for (let i = 0; i < tabs; i++) {
+      go += '\t';
+    }
   }
 
-  function append(str) {
+  function append(str: string) {
     go += str;
   }
 
-  function indenter(tabs) {
-    for (let i = 0; i < tabs; i++) { stack[stack.length - 1] += '\t'; }
+  function indenter(tabs: number) {
+    for (let i = 0; i < tabs; i++) {
+      stack[stack.length - 1] += '\t';
+    }
   }
 
-  function appender(str) {
+  function appender(str: string) {
     stack[stack.length - 1] += str;
   }
 
   // Generate a unique name to avoid duplicate struct field names.
   // This function appends a number at the end of the field name.
-  function uniqueTypeName(name, seen) {
+  function uniqueTypeName(name: string, seen: string | any[]) {
     if (!seen.includes(name)) {
       return name;
     }
@@ -245,7 +259,7 @@ export function jsonToGo(json, typename, flatten = true, example = false, allOmi
   }
 
   // Sanitizes and formats a string to make an appropriate identifier in Go
-  function format(str) {
+  function format(str: any) {
     str = formatNumber(str);
 
     const sanitized = toProperCase(str).replace(/[^a-z0-9]/ig, '');
@@ -259,9 +273,13 @@ export function jsonToGo(json, typename, flatten = true, example = false, allOmi
   }
 
   // Adds a prefix to a number to make an appropriate identifier in Go
-  function formatNumber(str) {
-    if (!str) { return ''; }
-    else if (str.match(/^\d+$/)) { str = `Num${str}`; }
+  function formatNumber(str: string) {
+    if (!str) {
+      return '';
+    }
+    else if (str.match(/^\d+$/)) {
+      str = `Num${str}`;
+    }
     else if (str.charAt(0).match(/\d/)) {
       const numbers = {
         0: 'Zero_',
@@ -282,23 +300,31 @@ export function jsonToGo(json, typename, flatten = true, example = false, allOmi
   }
 
   // Determines the most appropriate Go type
-  function goType(val) {
-    if (val === null) { return 'any'; }
+  function goType(val: string | number | null) {
+    if (val === null) {
+      return 'any';
+    }
 
     switch (typeof val) {
       case 'string':
-        if (/\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?(\+\d\d:\d\d|Z)/.test(val)) { return 'time.Time'; }
+        if (/\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?(\+\d\d:\d\d|Z)/.test(val)) {
+          return 'time.Time';
+        }
         else { return 'string'; }
       case 'number':
         if (val % 1 === 0) {
-          if (val > -2147483648 && val < 2147483647) { return 'int'; }
+          if (val > -2147483648 && val < 2147483647) {
+            return 'int';
+          }
           else { return 'int64'; }
         }
         else { return 'float64'; }
       case 'boolean':
         return 'bool';
       case 'object':
-        if (Array.isArray(val)) { return 'slice'; }
+        if (Array.isArray(val)) {
+          return 'slice';
+        }
         return 'struct';
       default:
         return 'any';
@@ -306,16 +332,18 @@ export function jsonToGo(json, typename, flatten = true, example = false, allOmi
   }
 
   // Given two types, returns the more specific of the two
-  function mostSpecificPossibleGoType(typ1, typ2) {
-    if (typ1.substr(0, 5) == 'float'
-				&& typ2.substr(0, 3) == 'int') { return typ1; }
-    else if (typ1.substr(0, 3) == 'int'
-				&& typ2.substr(0, 5) == 'float') { return typ2; }
+  function mostSpecificPossibleGoType(typ1: string, typ2: string) {
+    if (typ1.substr(0, 5) === 'float' && typ2.substr(0, 3) === 'int') {
+      return typ1;
+    }
+    else if (typ1.substr(0, 3) === 'int' && typ2.substr(0, 5) === 'float') {
+      return typ2;
+    }
     else { return 'any'; }
   }
 
   // Proper cases a string according to Go conventions
-  function toProperCase(str) {
+  function toProperCase(str: string) {
     // ensure that the SCREAMING_SNAKE_CASE is converted to snake_case
     if (str.match(/^[_A-Z0-9]+$/)) {
       str = str.toLowerCase();
@@ -329,23 +357,28 @@ export function jsonToGo(json, typename, flatten = true, example = false, allOmi
       'URI', 'URL', 'UTF8', 'VM', 'XML', 'XMPP', 'XSRF', 'XSS',
     ];
 
-    return str.replace(/(^|[^a-zA-Z])([a-z]+)/g, (unused, sep, frag) => {
-      if (commonInitialisms.includes(frag.toUpperCase())) { return sep + frag.toUpperCase(); }
+    return str.replace(/(^|[^a-zA-Z])([a-z]+)/g, (unused: any, sep: any, frag: string | string[]) => {
+      if (commonInitialisms.includes(frag.toUpperCase())) {
+        return sep + frag.toUpperCase();
+      }
       else { return sep + frag[0].toUpperCase() + frag.substr(1).toLowerCase(); }
-    }).replace(/([A-Z])([a-z]+)/g, (unused, sep, frag) => {
-      if (commonInitialisms.includes(sep + frag.toUpperCase())) { return (sep + frag).toUpperCase(); }
+    }).replace(/([A-Z])([a-z]+)/g, (unused: any, sep: any, frag: string) => {
+      if (commonInitialisms.includes(sep + frag.toUpperCase())) {
+        return (sep + frag).toUpperCase();
+      }
       else { return sep + frag; }
     });
   }
 
   function uuidv4() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-		  const r = Math.random() * 16 | 0; const v = c == 'x' ? r : (r & 0x3 | 0x8);
-		  return v.toString(16);
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
     });
   }
 
-  function getOriginalName(unique) {
+  function getOriginalName(unique: string) {
     const reLiteralUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     const uuidLength = 36;
 
@@ -358,56 +391,37 @@ export function jsonToGo(json, typename, flatten = true, example = false, allOmi
     return unique;
   }
 
-  function compareObjects(objectA, objectB) {
+  function compareObjects(objectA: any, objectB: any) {
     const object = '[object Object]';
-    return Object.prototype.toString.call(objectA) === object
-			&& Object.prototype.toString.call(objectB) === object;
+    return Object.prototype.toString.call(objectA) === object && Object.prototype.toString.call(objectB) === object;
   }
 
-  function compareObjectKeys(itemAKeys, itemBKeys) {
+  function compareObjectKeys(itemAKeys: string | any[], itemBKeys: string | any[]) {
     const lengthA = itemAKeys.length;
     const lengthB = itemBKeys.length;
 
     // nothing to compare, probably identical
-    if (lengthA == 0 && lengthB == 0) { return true; }
+    if (lengthA === 0 && lengthB === 0) {
+      return true;
+    }
 
     // duh
-    if (lengthA != lengthB) { return false; }
+    if (lengthA !== lengthB) {
+      return false;
+    }
 
     for (const item of itemAKeys) {
-      if (!itemBKeys.includes(item)) { return false; }
+      if (!itemBKeys.includes(item)) {
+        return false;
+      }
     }
     return true;
   }
 
-  function formatScopeKeys(keys) {
+  function formatScopeKeys(keys: string[]) {
     for (const i in keys) {
       keys[i] = format(keys[i]);
     }
     return keys;
-  }
-}
-
-if (typeof module != 'undefined') {
-  if (!module.parent) {
-    if (process.argv.length > 2 && process.argv[2] === '-big') {
-      bufs = [];
-      process.stdin.on('data', (buf) => {
-        bufs.push(buf);
-      });
-      process.stdin.on('end', () => {
-        const json = Buffer.concat(bufs).toString('utf8');
-        console.log(jsonToGo(json).go);
-      });
-    }
-    else {
-      process.stdin.on('data', (buf) => {
-        const json = buf.toString('utf8');
-        console.log(jsonToGo(json).go);
-      });
-    }
-  }
-  else {
-    module.exports = jsonToGo;
   }
 }
