@@ -7,8 +7,7 @@ export function jsonToGo(json: string, typename: string | '', flatten = true, ex
   let scope;
   let go = '';
   let tabs = 0;
-
-  const seen = {};
+  const seen: { [key: string]: any } = {};
   const stack: any[] = [];
   let accumulator = '';
   const innerTabs = 0;
@@ -54,7 +53,7 @@ export function jsonToGo(json: string, typename: string | '', flatten = true, ex
           }
         }
 
-        const slice = flatten && ['struct', 'slice'].includes(sliceType)
+        const slice = flatten && ['struct', 'slice'].includes(sliceType ?? '[]')
           ? `[]${parent}`
           : '[]';
 
@@ -63,7 +62,7 @@ export function jsonToGo(json: string, typename: string | '', flatten = true, ex
         }
         else { append(slice); };
         if (sliceType === 'struct') {
-          const allFields = {};
+          const allFields = {} as Record<string, { value: string; count: number }>;
 
           // for each field counts how many times appears
           for (let i = 0; i < scopeLength; i++) {
@@ -101,8 +100,8 @@ export function jsonToGo(json: string, typename: string | '', flatten = true, ex
           // create a common struct with all fields found in the current array
           // omitempty dict indicates if a field is optional
           const keys = Object.keys(allFields);
-          const struct = {};
-          const omitempty = {};
+          const struct = {} as Record<string, string>;
+          const omitempty = {} as Record<string, boolean>;
           for (const k in keys) {
             const keyname = keys[k];
             const elem = allFields[keyname];
@@ -133,7 +132,7 @@ export function jsonToGo(json: string, typename: string | '', flatten = true, ex
             append(parent);
           }
         }
-        parseStruct(depth + 1, innerTabs, scope);
+        parseStruct(depth + 1, innerTabs, scope, undefined);
       }
     }
     else {
@@ -148,16 +147,18 @@ export function jsonToGo(json: string, typename: string | '', flatten = true, ex
 
   function parseStruct(depth: number | undefined, innerTabs: number, scope: { [x: string]: any }, omitempty: { [x: string]: boolean } | undefined) {
     if (flatten) {
-      stack.push(
-        depth >= 2
-          ? '\n'
-          : '',
-      );
+      if (depth !== undefined) {
+        stack.push(
+          depth >= 2
+            ? '\n'
+            : '',
+        );
+      }
     }
 
     const seenTypeNames = [];
 
-    if (flatten && depth >= 2) {
+    if (flatten && depth !== undefined && depth >= 2) {
       const parentType = `type ${parent}`;
       const scopeKeys = formatScopeKeys(Object.keys(scope));
 
@@ -281,7 +282,7 @@ export function jsonToGo(json: string, typename: string | '', flatten = true, ex
       str = `Num${str}`;
     }
     else if (str.charAt(0).match(/\d/)) {
-      const numbers = {
+      const numbers: { [key: string]: string } = {
         0: 'Zero_',
         1: 'One_',
         2: 'Two_',
@@ -358,10 +359,12 @@ export function jsonToGo(json: string, typename: string | '', flatten = true, ex
     ];
 
     return str.replace(/(^|[^a-zA-Z])([a-z]+)/g, (unused: any, sep: any, frag: string | string[]) => {
-      if (commonInitialisms.includes(frag.toUpperCase())) {
+      if (!Array.isArray(frag) && commonInitialisms.includes(frag.toUpperCase())) {
         return sep + frag.toUpperCase();
       }
-      else { return sep + frag[0].toUpperCase() + frag.substr(1).toLowerCase(); }
+      else {
+        return sep + frag[0].toUpperCase() + (frag as string).substr(1).toLowerCase();
+      }
     }).replace(/([A-Z])([a-z]+)/g, (unused: any, sep: any, frag: string) => {
       if (commonInitialisms.includes(sep + frag.toUpperCase())) {
         return (sep + frag).toUpperCase();

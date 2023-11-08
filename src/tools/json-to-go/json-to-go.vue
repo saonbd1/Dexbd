@@ -4,6 +4,7 @@ import { jsonToGo } from './json-to-go.service';
 import type { UseValidationRule } from '@/composable/validation';
 import TextareaCopyable from '@/components/TextareaCopyable.vue';
 
+const inputElement = ref<HTMLElement>();
 const { t } = useI18n();
 const definitions = ref(true);
 const omitempty = ref(false);
@@ -30,6 +31,7 @@ const rules: UseValidationRule<string>[] = [
       <n-switch v-model:value="example" />
     </n-form-item>
     <c-input-text
+      ref="inputElement"
       v-model:value="jsonInput"
       multiline
       placeholder="Put your josn string here..."
